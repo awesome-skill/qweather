@@ -68,8 +68,8 @@ Binaries will be installed to `$GOPATH/bin`.
 
 **Option 1: Configuration file**
 ```bash
-mkdir -p ~/.config/awesome-skills/qweather
-echo "your_api_key_here" > ~/.config/awesome-skills/qweather/api_key
+mkdir -p ~/.config/awesome-skill/weather/qweather_api_key
+echo "your_api_key_here" > ~/.config/awesome-skill/weather/qweather_api_key
 ```
 
 **Option 2: Environment variable**

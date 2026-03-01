@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 // Config holds the application configuration
@@ -20,6 +22,10 @@ type QWeatherConfig struct {
 
 // Load loads configuration from environment variables and config files
 func Load() (*Config, error) {
+	// Load .env file if it exists
+	// This will not error if .env doesn't exist, which is fine
+	_ = godotenv.Load()
+
 	cfg := &Config{
 		QWeather: QWeatherConfig{
 			APIHost: getEnvWithDefault("QWEATHER_API_HOST", "devapi.qweather.com"),
@@ -39,7 +45,7 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("get config directory: %w", err)
 	}
 
-	apiKeyPath := filepath.Join(configDir, "qweather", "api_key")
+	apiKeyPath := filepath.Join(configDir, "weather", "qweather_api_key")
 	apiKeyBytes, err := os.ReadFile(apiKeyPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -60,7 +66,7 @@ func Load() (*Config, error) {
 func getConfigDir() (string, error) {
 	// Check for XDG_CONFIG_HOME first
 	if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
-		return filepath.Join(xdgConfig, "awesome-skills"), nil
+		return filepath.Join(xdgConfig, "awesome-skill/weather"), nil
 	}
 
 	// Fall back to ~/.config
@@ -69,7 +75,7 @@ func getConfigDir() (string, error) {
 		return "", fmt.Errorf("get user home directory: %w", err)
 	}
 
-	return filepath.Join(homeDir, ".config", "awesome-skills"), nil
+	return filepath.Join(homeDir, ".config", "awesome-skill"), nil
 }
 
 // getEnvWithDefault gets environment variable with a default value
@@ -87,7 +93,7 @@ func EnsureConfigDir() error {
 		return err
 	}
 
-	qweatherDir := filepath.Join(configDir, "qweather")
+	qweatherDir := filepath.Join(configDir, "weather")
 	if err := os.MkdirAll(qweatherDir, 0755); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
 	}

@@ -2,7 +2,7 @@
 
 # Variables
 BINARY_DIR := bin
-BINARIES := weather ask-cli
+BINARIES := weather
 GO := go
 GOFLAGS := -v
 GOPATH := $(shell go env GOPATH)
@@ -25,12 +25,6 @@ build-weather:
 	@echo "Building weather CLI..."
 	@mkdir -p $(BINARY_DIR)
 	$(GO) build $(GOFLAGS) -o $(BINARY_DIR)/weather ./cmd/weather
-
-# Build ask-cli only
-build-ask-cli:
-	@echo "Building ask-cli..."
-	@mkdir -p $(BINARY_DIR)
-	$(GO) build $(GOFLAGS) -o $(BINARY_DIR)/ask-cli ./cmd/ask-cli
 
 # Install CLIs to system
 install: build
@@ -90,7 +84,6 @@ help:
 	@echo "Available targets:"
 	@echo "  make build          - Build all CLIs (default)"
 	@echo "  make build-weather  - Build weather CLI only"
-	@echo "  make build-ask-cli  - Build ask-cli only"
 	@echo "  make install        - Install CLIs to system (GOPATH/bin)"
 	@echo "  make test           - Run all tests"
 	@echo "  make test-cover     - Run tests with coverage report"

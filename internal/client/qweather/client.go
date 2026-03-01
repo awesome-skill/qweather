@@ -1,6 +1,7 @@
 package qweather
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -46,7 +47,6 @@ func (c *Client) doRequest(ctx context.Context, endpoint string, params url.Valu
 	if params == nil {
 		params = url.Values{}
 	}
-	params.Set("key", c.APIKey)
 	u.RawQuery = params.Encode()
 
 	// Create request
@@ -55,9 +55,14 @@ func (c *Client) doRequest(ctx context.Context, endpoint string, params url.Valu
 		return fmt.Errorf("create request: %w", err)
 	}
 
+	fmt.Printf("Request URL: %s\n", req.URL.String()) // Debug log
+
 	// Set headers
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Accept-Encoding", "gzip")
+	// req.Header.Set("Accept", "application/json")
+	// Note: Go's http.Client automatically handles gzip decompression when needed
+
+	// set api key in header for better security
+	req.Header.Set("X-QW-Api-Key", c.APIKey)
 
 	// Perform request
 	resp, err := c.HTTPClient.Do(req)
@@ -66,15 +71,30 @@ func (c *Client) doRequest(ctx context.Context, endpoint string, params url.Valu
 	}
 	defer resp.Body.Close()
 
+	// Handle gzip-compressed responses
+	var bodyReader io.Reader = resp.Body
+	if resp.Header.Get("Content-Encoding") == "gzip" {
+		gzipReader, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			return fmt.Errorf("read gzip response: %w", err)
+		}
+		defer gzipReader.Close()
+		bodyReader = gzipReader
+	}
+
 	// Read response body
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(bodyReader)
 	if err != nil {
 		return fmt.Errorf("read response body: %w", err)
 	}
 
 	// Check status code
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+		bodyStr := string(body)
+		if len(bodyStr) > 500 {
+			bodyStr = bodyStr[:500] + "... (truncated)"
+		}
+		return fmt.Errorf("API request failed with status %d", resp.StatusCode)
 	}
 
 	// Parse JSON response
