@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,7 +46,7 @@ func TestLoad_CustomAPIHost(t *testing.T) {
 func TestLoad_FromFile(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, ".config", "awesome-skills", "qweather")
+	configDir := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather")
 	require.NoError(t, os.MkdirAll(configDir, 0755))
 
 	expectedKey := "test-api-key-from-file"
@@ -71,7 +72,7 @@ func TestLoad_FromFile(t *testing.T) {
 func TestLoad_FileWithWhitespace(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, ".config", "awesome-skills", "qweather")
+	configDir := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather")
 	require.NoError(t, os.MkdirAll(configDir, 0755))
 
 	expectedKey := "test-api-key-trimmed"
@@ -96,7 +97,7 @@ func TestLoad_FileWithWhitespace(t *testing.T) {
 func TestLoad_EnvPriority(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, ".config", "awesome-skills", "qweather")
+	configDir := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather")
 	require.NoError(t, os.MkdirAll(configDir, 0755))
 
 	fileKey := "file-key"
@@ -141,7 +142,7 @@ func TestLoad_NoAPIKey(t *testing.T) {
 func TestLoad_EmptyAPIKeyFile(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, ".config", "awesome-skills", "qweather")
+	configDir := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather")
 	require.NoError(t, os.MkdirAll(configDir, 0755))
 
 	apiKeyFile := filepath.Join(configDir, "api_key")
@@ -166,7 +167,7 @@ func TestLoad_XDGConfigHome(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
 	xdgConfig := filepath.Join(tmpDir, "custom-config")
-	configDir := filepath.Join(xdgConfig, "awesome-skills", "qweather")
+	configDir := filepath.Join(xdgConfig, "awesome-skill", "qweather")
 	require.NoError(t, os.MkdirAll(configDir, 0755))
 
 	expectedKey := "test-xdg-key"
@@ -201,7 +202,7 @@ func TestEnsureConfigDir(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify directory exists
-	expectedDir := filepath.Join(tmpDir, ".config", "awesome-skills", "qweather")
+	expectedDir := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather")
 	info, err := os.Stat(expectedDir)
 	require.NoError(t, err)
 	assert.True(t, info.IsDir())
@@ -213,7 +214,7 @@ func TestEnsureConfigDir(t *testing.T) {
 func TestEnsureConfigDir_AlreadyExists(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, ".config", "awesome-skills", "qweather")
+	configDir := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather")
 	require.NoError(t, os.MkdirAll(configDir, 0755))
 
 	originalHome := os.Getenv("HOME")
@@ -242,8 +243,176 @@ func TestEnsureConfigDir_XDGConfigHome(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify directory exists in XDG location
-	expectedDir := filepath.Join(xdgConfig, "awesome-skills", "qweather")
+	expectedDir := filepath.Join(xdgConfig, "awesome-skill", "qweather")
 	info, err := os.Stat(expectedDir)
 	require.NoError(t, err)
 	assert.True(t, info.IsDir())
+}
+
+func TestLoad_APIHostFromFile(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	configDir := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather")
+	require.NoError(t, os.MkdirAll(configDir, 0755))
+
+	expectedKey := "test-api-key"
+	expectedHost := "api.qweather.com"
+
+	apiKeyFile := filepath.Join(configDir, "api_key")
+	require.NoError(t, os.WriteFile(apiKeyFile, []byte(expectedKey), 0600))
+
+	apiHostFile := filepath.Join(configDir, "api_host")
+	require.NoError(t, os.WriteFile(apiHostFile, []byte(expectedHost), 0600))
+
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", originalHome)
+
+	os.Unsetenv("QWEATHER_API_KEY")
+	os.Unsetenv("QWEATHER_API_HOST")
+
+	// Act
+	config, err := Load()
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, expectedKey, config.QWeather.APIKey)
+	assert.Equal(t, expectedHost, config.QWeather.APIHost)
+}
+
+func TestLoad_APIHostEnvPriority(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	configDir := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather")
+	require.NoError(t, os.MkdirAll(configDir, 0755))
+
+	expectedKey := "test-api-key"
+	envHost := "env-api-host.com"
+	fileHost := "file-api-host.com"
+
+	apiKeyFile := filepath.Join(configDir, "api_key")
+	require.NoError(t, os.WriteFile(apiKeyFile, []byte(expectedKey), 0600))
+
+	apiHostFile := filepath.Join(configDir, "api_host")
+	require.NoError(t, os.WriteFile(apiHostFile, []byte(fileHost), 0600))
+
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", originalHome)
+
+	os.Unsetenv("QWEATHER_API_KEY")
+	os.Setenv("QWEATHER_API_HOST", envHost)
+	defer os.Unsetenv("QWEATHER_API_HOST")
+
+	// Act
+	config, err := Load()
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, expectedKey, config.QWeather.APIKey)
+	assert.Equal(t, envHost, config.QWeather.APIHost)
+}
+
+func TestLoad_APIHostFilePriority(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	configDir := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather")
+	require.NoError(t, os.MkdirAll(configDir, 0755))
+
+	expectedKey := "test-api-key"
+	expectedHost := "file-api-host.com"
+
+	apiKeyFile := filepath.Join(configDir, "api_key")
+	require.NoError(t, os.WriteFile(apiKeyFile, []byte(expectedKey), 0600))
+
+	apiHostFile := filepath.Join(configDir, "api_host")
+	require.NoError(t, os.WriteFile(apiHostFile, []byte(expectedHost), 0600))
+
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", originalHome)
+
+	os.Unsetenv("QWEATHER_API_KEY")
+	os.Unsetenv("QWEATHER_API_HOST")
+
+	// Act
+	config, err := Load()
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, expectedKey, config.QWeather.APIKey)
+	assert.Equal(t, expectedHost, config.QWeather.APIHost)
+}
+
+func TestSetAPIKey(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", originalHome)
+
+	expectedKey := "test-api-key-to-set"
+
+	// Act
+	err := SetAPIKey(expectedKey)
+
+	// Assert
+	require.NoError(t, err)
+
+	apiKeyPath := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather", "api_key")
+	actualKey, err := os.ReadFile(apiKeyPath)
+	require.NoError(t, err)
+	assert.Equal(t, expectedKey, strings.TrimSpace(string(actualKey)))
+}
+
+func TestSetAPIHost(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", originalHome)
+
+	expectedHost := "api.qweather.com"
+
+	// Act
+	err := SetAPIHost(expectedHost)
+
+	// Assert
+	require.NoError(t, err)
+
+	apiHostPath := filepath.Join(tmpDir, ".config", "awesome-skill", "qweather", "api_host")
+	actualHost, err := os.ReadFile(apiHostPath)
+	require.NoError(t, err)
+	assert.Equal(t, expectedHost, strings.TrimSpace(string(actualHost)))
+}
+
+func TestGetConfigDir(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", originalHome)
+
+	// Act
+	configDir, err := GetConfigDir()
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(tmpDir, ".config", "awesome-skill"), configDir)
+}
+
+func TestGetConfigDir_XDG(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	xdgConfig := filepath.Join(tmpDir, "custom-config")
+
+	os.Setenv("XDG_CONFIG_HOME", xdgConfig)
+	defer os.Unsetenv("XDG_CONFIG_HOME")
+
+	// Act
+	configDir, err := GetConfigDir()
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(xdgConfig, "awesome-skill"), configDir)
 }

@@ -1,0 +1,29 @@
+[skill]
+name = "qweather"
+version = "0.1.0"
+description = "Query weather information using QWeather API"
+author = "drmfly"
+license = "MIT"
+tags = ["weather", "qweather"]
+
+[runtime]
+type = "built-in"
+# entry = "src/main.py"
+
+# [[tools.provided]]
+# name = "summarize_url"
+# description = "Fetch a URL and return a concise bullet-point summary"
+# input_schema = { type = "object", properties = { url = { type = "string", description = "The URL to summarize" } }, required = [
+#     "url",
+# ] }
+
+# [[tools.provided]]
+# name = "extract_links"
+# description = "Extract all links from a web page"
+# input_schema = { type = "object", properties = { url = { type = "string" } }, required = [
+#     "url",
+# ] }
+
+[requirements]
+tools = ["web_fetch"]
+capabilities = ["NetConnect(*)", "ShellExec(qweather)"]

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/pangu-studio/awesome-skills/cmd/weather/cmd"
+	"github.com/pangu-studio/awesome-skills/cmd/qweather/cmd"
 )
 
 func main() {

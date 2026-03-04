@@ -1,11 +1,16 @@
-.PHONY: all build install clean test test-cover lint fmt vet help build-weather build-ask-cli
+.PHONY: all build install clean test test-cover lint fmt vet help build-weather build-ask-cli build-linux
 
 # Variables
 BINARY_DIR := bin
-BINARIES := weather
+BINARIES := qweather
 GO := go
 GOFLAGS := -v
 GOPATH := $(shell go env GOPATH)
+
+# Cross-compilation variables
+GOOS_LINUX := linux
+GOARCH_AMD64 := amd64
+BINARY_LINUX := qweather-linux-amd64
 
 # Default target
 all: build
@@ -25,6 +30,13 @@ build-weather:
 	@echo "Building weather CLI..."
 	@mkdir -p $(BINARY_DIR)
 	$(GO) build $(GOFLAGS) -o $(BINARY_DIR)/weather ./cmd/weather
+
+# Build for Linux amd64
+build-linux:
+	@echo "Building for Linux amd64..."
+	@mkdir -p $(BINARY_DIR)
+	GOOS=$(GOOS_LINUX) GOARCH=$(GOARCH_AMD64) $(GO) build $(GOFLAGS) -o $(BINARY_DIR)/$(BINARY_LINUX) ./cmd/qweather
+	@echo "Linux binary built: $(BINARY_DIR)/$(BINARY_LINUX)"
 
 # Install CLIs to system
 install: build
@@ -84,6 +96,7 @@ help:
 	@echo "Available targets:"
 	@echo "  make build          - Build all CLIs (default)"
 	@echo "  make build-weather  - Build weather CLI only"
+	@echo "  make build-linux    - Build weather CLI for Linux amd64"
 	@echo "  make install        - Install CLIs to system (GOPATH/bin)"
 	@echo "  make test           - Run all tests"
 	@echo "  make test-cover     - Run tests with coverage report"

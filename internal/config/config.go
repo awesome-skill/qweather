@@ -45,7 +45,7 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("get config directory: %w", err)
 	}
 
-	apiKeyPath := filepath.Join(configDir, "weather", "qweather_api_key")
+	apiKeyPath := filepath.Join(configDir, "qweather", "api_key")
 	apiKeyBytes, err := os.ReadFile(apiKeyPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -59,6 +59,15 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("API key file is empty: %s", apiKeyPath)
 	}
 
+	if os.Getenv("QWEATHER_API_HOST") == "" {
+		apiHostPath := filepath.Join(configDir, "qweather", "api_host")
+		if apiHostBytes, err := os.ReadFile(apiHostPath); err == nil {
+			if host := strings.TrimSpace(string(apiHostBytes)); host != "" {
+				cfg.QWeather.APIHost = host
+			}
+		}
+	}
+
 	return cfg, nil
 }
 
@@ -66,7 +75,7 @@ func Load() (*Config, error) {
 func getConfigDir() (string, error) {
 	// Check for XDG_CONFIG_HOME first
 	if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
-		return filepath.Join(xdgConfig, "awesome-skill/weather"), nil
+		return filepath.Join(xdgConfig, "awesome-skill"), nil
 	}
 
 	// Fall back to ~/.config
@@ -93,9 +102,52 @@ func EnsureConfigDir() error {
 		return err
 	}
 
-	qweatherDir := filepath.Join(configDir, "weather")
+	qweatherDir := filepath.Join(configDir, "qweather")
 	if err := os.MkdirAll(qweatherDir, 0755); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
+	}
+
+	return nil
+}
+
+// GetConfigDir returns the config directory path
+func GetConfigDir() (string, error) {
+	return getConfigDir()
+}
+
+// SetAPIKey saves the API key to the config file
+func SetAPIKey(apiKey string) error {
+	if err := EnsureConfigDir(); err != nil {
+		return err
+	}
+
+	configDir, err := getConfigDir()
+	if err != nil {
+		return err
+	}
+
+	apiKeyPath := filepath.Join(configDir, "qweather", "api_key")
+	if err := os.WriteFile(apiKeyPath, []byte(apiKey), 0600); err != nil {
+		return fmt.Errorf("write API key file: %w", err)
+	}
+
+	return nil
+}
+
+// SetAPIHost saves the API host to the config file
+func SetAPIHost(apiHost string) error {
+	if err := EnsureConfigDir(); err != nil {
+		return err
+	}
+
+	configDir, err := getConfigDir()
+	if err != nil {
+		return err
+	}
+
+	apiHostPath := filepath.Join(configDir, "qweather", "api_host")
+	if err := os.WriteFile(apiHostPath, []byte(apiHost), 0600); err != nil {
+		return fmt.Errorf("write API host file: %w", err)
 	}
 
 	return nil

@@ -12,34 +12,31 @@ import (
 )
 
 var (
-	nowLocation string
+	searchQuery string
 )
 
-// nowCmd represents the now command
-var nowCmd = &cobra.Command{
-	Use:   "now",
-	Short: "Get current weather",
-	Long: `Get current weather conditions for a specified location.
+// searchCmd represents the search command
+var searchCmd = &cobra.Command{
+	Use:   "search",
+	Short: "Search for cities",
+	Long: `Search for cities by name or location.
 
-Location can be:
-  - City name (e.g., "北京", "Beijing")
-  - Location ID (e.g., "101010100")
-  - Coordinates (e.g., "116.41,39.92")
+The search supports fuzzy matching and returns multiple results.
 
 Examples:
-  weather now --location "北京"
-  weather now --location "101010100"
-  weather now --location "116.41,39.92" --format json`,
-	RunE: runNow,
+  qweather search --query "北京"
+  qweather search --query "beijing" --format table
+  qweather search --query "london" --format json`,
+	RunE: runSearch,
 }
 
 func init() {
-	rootCmd.AddCommand(nowCmd)
-	nowCmd.Flags().StringVarP(&nowLocation, "location", "l", "", "Location to query (required)")
-	nowCmd.MarkFlagRequired("location")
+	rootCmd.AddCommand(searchCmd)
+	searchCmd.Flags().StringVarP(&searchQuery, "query", "q", "", "Search query (required)")
+	searchCmd.MarkFlagRequired("query")
 }
 
-func runNow(cmd *cobra.Command, args []string) error {
+func runSearch(cmd *cobra.Command, args []string) error {
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -54,8 +51,8 @@ func runNow(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Get current weather
-	weatherData, err := client.GetNowWeather(ctx, nowLocation)
+	// Search for cities
+	searchData, err := client.SearchCity(ctx, searchQuery)
 	if err != nil {
 		printError(err)
 		return err
@@ -68,7 +65,7 @@ func runNow(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := formatter.FormatWeatherNow(weatherData, os.Stdout); err != nil {
+	if err := formatter.FormatCitySearch(searchData, os.Stdout); err != nil {
 		printError(err)
 		return err
 	}

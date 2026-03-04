@@ -15,7 +15,7 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "weather",
+	Use:   "qweather",
 	Short: "Weather CLI powered by QWeather API",
 	Long: `A command-line tool to query weather information using QWeather API.
 

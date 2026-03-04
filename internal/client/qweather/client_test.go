@@ -79,8 +79,8 @@ func TestGetNowWeather_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request
 		assert.Equal(t, "/v7/weather/now", r.URL.Path)
-		assert.Equal(t, "Beijing", r.URL.Query().Get("location"))
-		assert.NotEmpty(t, r.URL.Query().Get("key"))
+		assert.Equal(t, "101010100", r.URL.Query().Get("location"))
+		assert.Equal(t, "test-key", r.Header.Get("X-QW-Api-Key"))
 
 		// Return mock response
 		w.Header().Set("Content-Type", "application/json")
@@ -91,7 +91,7 @@ func TestGetNowWeather_Success(t *testing.T) {
 	client := NewClient("test-key", server.URL)
 
 	// Act
-	response, err := client.GetNowWeather(context.Background(), "Beijing")
+	response, err := client.GetNowWeather(context.Background(), "101010100")
 
 	// Assert
 	require.NoError(t, err)
@@ -113,7 +113,7 @@ func TestGetNowWeather_APIErrorCode(t *testing.T) {
 	client := NewClient("invalid-key", server.URL)
 
 	// Act
-	response, err := client.GetNowWeather(context.Background(), "Beijing")
+	response, err := client.GetNowWeather(context.Background(), "101010100")
 
 	// Assert
 	require.Error(t, err)
@@ -132,7 +132,7 @@ func TestGetNowWeather_HTTPError(t *testing.T) {
 	client := NewClient("test-key", server.URL)
 
 	// Act
-	response, err := client.GetNowWeather(context.Background(), "Beijing")
+	response, err := client.GetNowWeather(context.Background(), "101010100")
 
 	// Assert
 	require.Error(t, err)
@@ -180,7 +180,7 @@ func TestGetDailyForecast_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request
 		assert.Equal(t, "/v7/weather/3d", r.URL.Path)
-		assert.Equal(t, "Beijing", r.URL.Query().Get("location"))
+		assert.Equal(t, "101010100", r.URL.Query().Get("location"))
 
 		// Return mock response
 		w.Header().Set("Content-Type", "application/json")
@@ -191,7 +191,7 @@ func TestGetDailyForecast_Success(t *testing.T) {
 	client := NewClient("test-key", server.URL)
 
 	// Act
-	response, err := client.GetDailyForecast(context.Background(), "Beijing", 3)
+	response, err := client.GetDailyForecast(context.Background(), "101010100", 3)
 
 	// Assert
 	require.NoError(t, err)
@@ -220,7 +220,7 @@ func TestGetDailyForecast_ValidDays(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", server.URL)
-			_, err := client.GetDailyForecast(context.Background(), "Beijing", days)
+			_, err := client.GetDailyForecast(context.Background(), "101010100", days)
 			assert.NoError(t, err)
 		})
 	}
@@ -243,7 +243,7 @@ func TestGetDailyForecast_InvalidDays(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Act
-			response, err := client.GetDailyForecast(context.Background(), "Beijing", tc.days)
+			response, err := client.GetDailyForecast(context.Background(), "101010100", tc.days)
 
 			// Assert
 			require.Error(t, err)
@@ -266,7 +266,7 @@ func TestGetDailyForecast_APIErrorCode(t *testing.T) {
 	client := NewClient("test-key", server.URL)
 
 	// Act
-	response, err := client.GetDailyForecast(context.Background(), "InvalidLocation", 3)
+	response, err := client.GetDailyForecast(context.Background(), "101010100", 3)
 
 	// Assert
 	require.Error(t, err)
@@ -299,7 +299,7 @@ func TestSearchCity_Success(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request
-		assert.Equal(t, "/v7/geo/city/lookup", r.URL.Path)
+		assert.Equal(t, "/geo/v2/city/lookup", r.URL.Path)
 		assert.Equal(t, "beijing", r.URL.Query().Get("location"))
 
 		// Return mock response
@@ -381,7 +381,7 @@ func TestDoRequest_ContextCancellation(t *testing.T) {
 	cancel()
 
 	// Act
-	response, err := client.GetNowWeather(ctx, "Beijing")
+	response, err := client.GetNowWeather(ctx, "101010100")
 
 	// Assert
 	require.Error(t, err)
